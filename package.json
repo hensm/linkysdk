@@ -1,0 +1,55 @@
+{
+	"title": "Linky (SDK)",
+	"name": "linkysdk",
+	"id": "linkysdk@cssu.in",
+	"version": "0.0.1",
+	"description": "",
+	"icon": "resource://linkysdk-at-cssu-dot-in/data/icon.png",
+	"main": "index.js",
+	"author": "Marcii <marcii@cssu.in>",
+	"engines": {
+		"firefox": ">=38.0a1"
+	},
+	"license": "MIT",
+	"keywords": [
+		"jetpack"
+	],
+	"preferences-branch": "linky",
+	"preferences": [{
+			"name": "showopen",
+			"type": "menulist",
+			"value": 0,
+			"options": [{
+				"value": "0",
+				"label": "tab"
+			}, {
+				"value": "1",
+				"label": "win"
+			}, {
+				"value": "2",
+				"label": "all"
+			}],
+			"title": "_"
+		},
+
+		{ "name": "context.selectedlinks",			"type": "bool",		"value": true,	"title": "_" },
+		{ "name": "context.selectedtextlinks",		"type": "bool",		"value": true,	"title": "_" },
+		{ "name": "context.alllinks",				"type": "bool",		"value": true,	"title": "_" },
+		{ "name": "context.clipboard",				"type": "bool",		"value": true,	"title": "_" },
+		{ "name": "context.downloadlinks",			"type": "bool",		"value": true,	"title": "_" },
+		
+		{ "name": "context.piclinks",				"type": "bool",		"value": true,	"title": "_", "hidden": true },
+		{ "name": "context.piclinksshow",			"type": "bool",		"value": true,	"title": "_", "hidden": true },
+
+		{ "name": "showselect",						"type": "integer",	"value": 0,		"title": "_", "hidden": true },
+		{ "name": "open_mailnews",					"type": "bool",		"value": false,	"title": "_", "hidden": true },
+		{ "name": "delay",							"type": "integer",	"value": 2000,	"title": "_", "hidden": true },
+
+
+		{ "name": "download.overwrite",				"type": "integer", 	"value": 3,		"title": "_", "hidden": true },
+		{ "name": "download.directory",				"type": "string", 	"value": "",	"title": "_", "hidden": true },
+		{ "name": "download.directory.remember",	"type": "bool",		"value": true,	"title": "_", "hidden": true },
+
+		{ "name": "developer",						"type": "bool",		"value": false,	"title": "_", "hidden": true }
+	]
+}

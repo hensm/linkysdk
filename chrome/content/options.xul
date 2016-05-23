@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://linkysdk/locale/main.dtd">
+
+<prefwindow xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&linky.label;" id="options">
+	<script src="options.js"/>
+	<prefpane id="prefs">
+		<preferences>
+			<preference id="show-open" name="extensions.linky.showopen" type="int" />
+			<preference id="selected-links" name="extensions.linky.context.selectedlinks" type="bool" />
+			<preference id="selected-text-links" name="extensions.linky.context.selectedtextlinks" type="bool" />
+			<preference id="all-links" name="extensions.linky.context.alllinks" type="bool" />
+			<preference id="image-links" name="extensions.linky.context.piclinks" type="bool" />
+			<preference id="image-links-show" name="extensions.linky.context.piclinksshow" type="bool" />
+			<preference id="image-show" name="extensions.linky.context.picshow" type="bool" />
+			<preference id="clipboard" name="extensions.linky.context.clipboard" type="bool" />
+			<preference id="validate-links" name="extensions.linky.context.validatelinks" type="bool" />
+			<preference id="download-links" name="extensions.linky.context.downloadlinks" type="bool" />
+			<preference id="show-select" name="extensions.linky.show-select" type="int" />
+			<preference id="download-overwrite" name="extensions.linky.download.overwrite" type="int" />
+			<preference id="download-directory" name="extensions.linky.download.directory" type="file" />
+			<preference id="download-directory-remember" name="extensions.linky.download.directory.remember" type="bool" />
+			<preference id="validate-url" name="extensions.linky.validateURL" type="string" />
+			<preference id="image-extensions" name="extensions.linky.imgexts" type="string" />
+			<preference id="open-mail-news" name="extensions.linky.open_mailnews" type="bool" />
+			<preference id="developer" name="extensions.linky.developer" type="bool" />
+		</preferences>
+		<tabbox>
+			<tabs>
+				<tab label="&linky-pref-general.label;"/>
+				<tab label="&linky-pref-advanced.label;"/>
+				<tab label="&linky-pref-about.label;"/>
+			</tabs>
+			<tabpanels>
+				<tabpanel orient="vertical">
+					<groupbox align="start">
+						<caption label="&linky-pref-showopen.label;"/>
+						<menulist preference="showopen" >
+							<menupopup>
+								<menuitem value="0" label="&linky-pref-showopen-tab.label;"/>
+								<menuitem value="1" label="&linky-pref-showopen-win.label;"/>
+								<menuitem value="2" label="&linky-pref-showopen-all.label;"/>
+							</menupopup>
+						</menulist>
+					</groupbox>
+					<hbox>
+						<groupbox flex="1">
+							<caption label="&linky-pref-contexts-links.label;"/>
+							<checkbox preference="selected-links" label="&linky-pref-contexts-selectedlinks.label;"/>
+							<checkbox preference="selected-text-links" label="&linky-pref-contexts-selectedtextlinks.label;"/>
+							<checkbox preference="all-links" label="&linky-pref-contexts-alllinks.label;"/>
+							<checkbox preference="clipboard" label="&linky-pref-context-clipboard.label;"/>
+							<checkbox preference="validatelinks" label="&linky-pref-context-validate.label;"/>
+							<checkbox preference="download-links" label="&linky-pref-context-download.label;"/>
+						</groupbox>
+						<groupbox flex="1">
+							<caption label="&linky-pref-contexts-pictures.label;"/>
+							<checkbox preference="image-links" label="&linky-pref-contexts-piclinks.label;"/>
+							<checkbox preference="image-links-show" label="&linky-pref-contexts-piclinksshow.label;"/>
+							<checkbox preference="image-show" label="&linky-pref-contexts-picshow.label;"/>
+						</groupbox>
+					</hbox>
+					<groupbox>
+						<caption label="&linky-pref-showselect.title;"/>
+						<vbox>
+							<hbox>
+								<label accesskey="&linky-pref-showselect.accesskey;" value="&linky-pref-showselect.label;"/>
+								<menulist preference="show-select">
+									<menupopup>
+										<menuitem value="0" label="0"/>
+										<menuitem value="10" label="10"/>
+										<menuitem value="20" label="20"/>
+										<menuitem value="30" label="30"/>
+										<menuitem value="40" label="40"/>
+										<menuitem value="50" label="50"/>
+									</menupopup>
+								</menulist>
+								<label value="&linky-pref-showselect-after.label;"/>
+							</hbox>
+							<vbox flex="1">
+								<description>&linky-pref-showselect-note.label;</description>
+							</vbox>
+						</vbox>
+					</groupbox>
+				</tabpanel>
+				<tabpanel orient="vertical">
+					<groupbox align="start">
+						<caption label="&linky-pref-adv-overwrite.label;"/>
+						<label value="&linky-pref-adv-overwrite-intro.label;"/>
+						<menulist preference="download-overwrite">
+							<menupopup>
+								<menuitem value="0" label="&linky-pref-adv-overwrite-always.label;"/>
+								<menuitem value="1" label="&linky-pref-adv-overwrite-prompt.label;"/>
+								<menuitem value="2" label="&linky-pref-adv-overwrite-never.label;"/>
+								<menuitem value="3" label="&linky-pref-adv-overwrite-auto.label;"/>
+							</menupopup>
+						</menulist>
+					</groupbox>
+					<groupbox>
+						<caption label="&linky-pref-validator.caption;"/>
+						<vbox flex="1">
+							<label value="&linky-pref-validator.label;"/>
+							<textbox flex="1" preference="validate-url"/>
+						</vbox>
+					</groupbox>
+					<groupbox>
+						<caption label="&linky-pref-download-directory.caption;"/>
+						<vbox>
+							<label value="&linky-pref-download-directory.label;"/>
+							<hbox align="center">
+								<filefield id="download-directory-dir" preference="download-directory" flex="1"/>
+								<button label="&linky-pref-download-directory-select.label;" oncommand="linkyOption.selectDir();"/>
+							</hbox>
+							<checkbox preference="remember-download-directory" label="&linky-pref-download-directory-remember.label;"/>
+						</vbox>
+					</groupbox>
+					<groupbox>
+						<caption label="&linky-pref-adv-imgexts.label;"/>
+						<vbox flex="1">
+							<label value="&linky-pref-adv-imgexts-intro.label;"/>
+							<textbox flex="1" preference="image-extensions"/>
+						</vbox>
+					</groupbox>
+					<groupbox>
+						<caption label="&linky-pref-misc.caption;"/>
+						<vbox>
+							<checkbox preference="open-mail-news" label="&linky-pref-adv-mailnews.label;"/>
+						</vbox>
+						<vbox>
+							<checkbox label="&linky-pref-developer.label;" preference="developer" />
+						</vbox>
+					</groupbox>
+				</tabpanel>
+				<tabpanel orient="vertical">
+					<groupbox>
+						<caption label="&linky-pref-about.label;"/>
+						<hbox>
+							<!--<image src="chrome://linky/skin/icon.png"/>-->
+						</hbox>
+						<separator class="thin"/>
+						<label value="&linky.about;"/>
+						<separator class="thin"/>
+						<vbox>
+							<label value="&linky.about.homepage.label;"/>
+							<hbox>
+								<label class="text-link" href="http://gemal.dk/mozilla/linky.html" value="http://gemal.dk/mozilla/linky.html"/>
+							</hbox>
+						</vbox>
+						<separator class="thin"/>
+						<vbox>
+							<label value="&linky.about.donate.label;"/>
+							<hbox>
+								<label class="text-link" href="http://gemal.dk/about/donate.html" value="http://gemal.dk/about/donate.html" flex="0"/>
+							</hbox>
+						</vbox>
+					</groupbox>
+				</tabpanel>
+			</tabpanels>
+		</tabbox>
+	</prefpane>
+</prefwindow>
