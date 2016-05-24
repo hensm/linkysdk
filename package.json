@@ -15,7 +15,8 @@
 		"jetpack"
 	],
 	"preferences-branch": "linky",
-	"preferences": [{
+	"preferences": [
+		{
 			"name": "showopen",
 			"type": "menulist",
 			"value": 0,

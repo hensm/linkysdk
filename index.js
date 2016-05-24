@@ -105,7 +105,33 @@ function on_menu_pref_change () {
 		? actions_tab.concat(actions_win)
 		: pref === 1
 			? actions_win
-			: actions_tab).map(function (item) {
+			: actions_tab).filter(function (item) {
+
+		switch (item) {
+			case "open-selected-tab":
+			case "open-selected-win":
+				return simple_prefs.prefs["context.selectedlinks"];
+
+			case "selected-text-tab":
+			case "selected-text-win":
+				return simple_prefs.prefs["context.selectedtextlinks"];
+
+			case "open-all-tab":
+			case "open-all-win":
+				return simple_prefs.prefs["context.alllinks"];
+
+			case "clipboard-selected":
+			case "clipboard-all":
+				return simple_prefs.prefs["context.clipboard"];
+
+			case "download-all":
+			case "download-selected":
+				return simple_prefs.prefs["context.downloadlinks"];
+
+			default:
+				return true;
+		}
+	}).map(function (item) {
 
 		// set contexts
 		switch (item) {

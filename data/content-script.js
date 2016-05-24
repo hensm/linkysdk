@@ -5,13 +5,13 @@ let getImages = () => Array.prototype.map.call(
 
 function getSelectedTextLinks() {
 	return window.getSelection().toString().split(/\s+/)
-			.filter(a => a.length && re_weburl.test(a));
+		.filter(a => a.length && re_weburl.test(a));
 }
 function getSelectedLinks() {
 	try {
 		let selection = window.getSelection();
 		let links = selection.getRangeAt(0).commonAncestorContainer
-				.querySelectorAll("a[href], area[href]");
+			.querySelectorAll("a[href], area[href]");
 		return Array.prototype.filter.call(
 				links, node => selection.containsNode(node, true)).map(href);
 	} catch(e) {
@@ -21,7 +21,7 @@ function getSelectedLinks() {
 
 function getImageLinks() {
 	return getLinks().filter(link => link.firstChild
-			&& link.firstChild.tagName === "IMG").map(href);
+		&& link.firstChild.tagName === "IMG").map(href);
 }
 
 
