@@ -121,6 +121,8 @@ function sort_tree (tree, column, order) {
 		};
 	}
 
+	data = data_initial.slice();
+
 	switch (column) {
 		case columns.CHECKED:
 			data.sort(_sort(item => item.checked));
@@ -133,7 +135,6 @@ function sort_tree (tree, column, order) {
 			break;
 	}
 
-	console.log(order, sort_orders.DESC, order === sort_orders.DESC);
 	if (order === sort_orders.DESC) {
 		data.reverse();
 	}
@@ -175,24 +176,37 @@ function bookmark_links () {
 		})));
 }
 
-function check_all (check) {
-	data.forEach(item => item.checked = check.checked);
+function check_all (check, sort_column, sort_order, tree) {
+	data_initial.forEach(item => item.checked = check.checked);
+	sort_tree(tree, sort_column, sort_order);
 }
 
 function check_substring (sort_column, sort_order, tree) {
-	match_substring(_("linky-select-part-confirm-label"),
-			item => item.checked = true, sort_column, sort_order, tree);
+	const substring = window.prompt(_("linky-select-part-confirm-label"));
+	data_initial.forEach(item => {
+		if (item.href.includes(substring)) {
+			item.checked = true;
+		}
+	});
+
+	sort_tree(tree, sort_column, sort_order);
 }
 
 function uncheck_substring (sort_column, sort_order, tree) {
-	match_substring(_("linky-select-partun-confirm-label"),
-			item => item.checked = false, sort_column, sort_order, tree);
+	const substring = window.prompt(_("linky-select-partun-confirm-label"));
+	data_initial.forEach(item => {
+		if (item.href.includes(substring)) {
+			item.checked = false;
+		}
+	});
+
+	sort_tree(tree, sort_column, sort_order);
 }
 
 function unescape_links () {
 	const url_param_regex = /.*\?\w+\=((ftp|https?):\/\/.*)[&|$]/i;
 
-	data.forEach(item => {
+	data_initial.forEach(item => {
 		const new_url = item.href.match(url_param_regex);
 
 		if (regex.test(new_url)) {
@@ -204,9 +218,9 @@ function unescape_links () {
 }
 
 function filter_substring (sort_column, sort_order, tree) {
-	const label = _("linky-select-partremove-confirm-label");
+	const substring = window.prompt(_("linky-select-partremove-confirm-label"));
 
-	match_substring(label, function (item, substring) {
+	data_initial.forEach(item => {
 		const new_url = item.href.replace(substring, "");
 
 		if (item.href !== new_url && regex.test(new_url)) {
@@ -214,11 +228,14 @@ function filter_substring (sort_column, sort_order, tree) {
 			item.href = parsed.href;
 			item.host = parsed.host;
 		}
-	}, sort_column, sort_order, tree);
+	});
+
+	sort_tree(tree, sort_column, sort_order);
 }
 
 function invert_selection () {
 	data.forEach(item => item.checked = !item.checked);
+	tree_view.tree.invalidate();
 }
 
 function open_links (type, delay_enabled) {
@@ -281,8 +298,7 @@ function match_substring (label, callback, sort_column, sort_order, tree) {
 			callback(item, substring);
 		}
 	});
-	sort_tree(sort_column, sort_order, tree)
-	// TODO: sorting here
+	sort_tree(sort_column, sort_order, tree);
 }
 
 
@@ -319,8 +335,6 @@ window.addEventListener("load", function () {
 	function on_sort (ev) {
 		let old_sort_column = sort_column;
 
-		console.log(ev);
-
 		switch (ev.currentTarget.id) {
 			case "linkChecked":		sort_column = columns.CHECKED;	break;
 			case "link-tree-href":	sort_column = columns.HREF;		break;
@@ -351,7 +365,7 @@ window.addEventListener("load", function () {
 
 
 	//Checkboxes
-	cmd("check-all",		(e) =>	check_all(e.target), "change");
+	cmd("check-all",		(e) =>	check_all(e.target, sort_column, sort_order, tree), "change");
 	//cmd("check-visited",	(e) => checkVisited(e.target));
 
 	//Buttons
