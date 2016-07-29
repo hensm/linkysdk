@@ -177,11 +177,11 @@ function sort_listbox (type, urls, listbox) {
 
 
 function copy_clipboard (all) {
-	clipboard.set(all
+	clipboard.set((all
 		? data.map(item => item.href)
 		: data
 			.filter(item => item.checked)
-			.map(item => item.href)).join("\n");
+			.map(item => item.href)).join("\n"));
 }
 
 function bookmark_links () {
