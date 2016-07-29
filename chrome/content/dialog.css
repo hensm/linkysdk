@@ -1,19 +1,15 @@
-@namespace "http://www.w3.org/1999/xhtml";
+@namespace "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-input[type="checkbox"] {
-	vertical-align: -2px;
-}
-input[type="checkbox"] + label {
-	margin-left: 3px;
-}
-
-treechildren::-moz-tree-checkbox {
-  /* unchecked checkbox treecells. This style MUST come before treechildren::-moz-tree-checkbox(checked) otherwise it won't take effect.  */
-  list-style-image: none;
+#link-tree treechildren::-moz-tree-image(linkChecked, checked) {
+  list-style-image: url("chrome://global/skin/in-content/check.svg#check");
+  width: 21px;
+  height: 21px;
 }
 
-treechildren::-moz-tree-checkbox(checked){
-  /* css for checked cells. cbox-check.gif isn't available in Firefox 1, 2, and 3 on Mac OS X, so you should specify a URL to an image
-     in your extension or elsewhere. */
-  list-style-image: url("chrome://global/skin/checkbox/cbox-check.gif");
+#link-tree treechildren::-moz-tree-image(linkChecked, checked, selected) {
+  list-style-image: url("chrome://global/skin/in-content/check.svg#check-inverted");
 }
+
+/*#link-tree treechildren::-moz-tree-row {
+  min-height: 36px;
+}*/

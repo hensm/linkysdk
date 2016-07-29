@@ -12,61 +12,91 @@ const tabs			= require("sdk/tabs");
 const timers		= require("sdk/timers");
 
 
-const util = Object.freeze({
-	get_list_items (listbox) {
-		return [...listbox.children].filter(child => child.tagName === "listitem");
-	},
 
-	is_checked (item) {
-		return item.firstChild.getAttribute("checked") === "true";
-	},
-	set_checked (item, state) {
-		item.firstChild.setAttribute("checked", state);
-		console.log(state, item.firstChild.getAttribute("checked"));
-	},
+const sort_types = Object.freeze({
+	DEFAULT: 0,
+	HREF: 1,
+	HOST: 2,
+	CHECKED: 3
+});
 
-	get_url (item) {
-		return item.childNodes[1].getAttribute("label");
-	},
-	set_url (item, value) {
-		item.childNodes[1].setAttribute("label", value);
-	},
-
-	set_host (item, value) {
-		item.childNodes[2].setAttribute("label", value);
-	},
-	get_host (item) {
-		return item.childNodes[2].getAttribute("label");
-	},
+const columns = Object.freeze({
+	CHECKED: "linkChecked",
+	HREF: "link-tree-href",
+	HOST: "link-tree-host"
+});
 
 
-	clear_sort_order (listbox, exceptions = []) {
-		[...listbox.querySelectorAll("listheader")].forEach(function (el) {
-			const id = el.getAttribute("id");
-			if (!exceptions.includes(id)) {
-				[...document.getAnonymousNodes(util.id(id))].last
-					.removeAttribute("sortDirection");
-			}
-		});
+// Main data
+// TODO: Find better way of doing this
+let tree;
+let data;
+
+var tree_view = {
+	tree: null,
+
+	get rowCount () {
+		return data.length;
 	},
 
-	get_sort_order (id) {
-		return [...document.getAnonymousNodes(util.id(id))].last
-			.getAttribute("sortDirection");
+	getCellText (row, col) {
+		switch (col.id) {
+			case columns.HREF:	return data[row].href;
+			case columns.HOST:	return data[row].host;
+
+			default:
+				return "";
+		}
 	},
-	set_sort_order (id, order) {
-		[...document.getAnonymousNodes(util.id(id))].last
-			.setAttribute("sortDirection", order);
+	getCellValue (row, col) {
+		if (col.id === columns.CHECKED) {
+			return data[row].checked;
+		}
+	},
+	isEditable (row, col) {
+		return col.id === columns.CHECKED;
+	},
+	setCellValue (row, col, value) {
+		if (col.id === columns.CHECKED) {
+			data[row].checked = value == "true";
+			this.tree.invalidate();
+		}
+	},
+	setTree (tree) {
+		this.tree = tree;
 	},
 
-	reverse_sort_order (id, listbox) {
-		this.set_sort_order(id, this.get_sort_order(id) === "descending"
-			? "ascending"
-			: "descending");
-		this.clear_sort_order(listbox, [ id ]);
-	},
+	//nsITreeView defaults
+	canDrop				()									{ return false	},
+	canDropBeforeAfter	()									{ return false	},
+	canDropOn			()									{ return false	},
+	cycleCell			(row, cell)							{},
+	cycleHeader			(col)								{},
+	drop				(row, orientation, transfer_data)	{},
+	getCellProperties	(row, col) 							{ return ""		},
+	getColumnProperties (col)								{ return ""		},
+	getImageSrc			(row, col)							{ return ""		},
+	getLevel			(index)								{ return 0;		},
+	getParentIndex		(row_index)							{ return -1		},
+	getProgressMode		(row, col)							{},
+	getRowProperties	(index)								{ return ""		},
+	hasNextSibling		(index, after_index)				{ return false	},
+	isContainer			(index)								{ return false	},
+	isContainerEmpty	(index)								{ return false	},
+	isContainerOpen		(index)								{ return false	},
+	isSelectable		(row, col)							{ return false	},
+	isSeparator			(index)								{ return false	},
+	isSorted			()									{ return false	},
+	performAction		(action)							{},
+	performActionOnCell	(action, row, col)					{},
+	performActionOnRow	(action, row)						{},
+	selectionChanged	()									{},
+	setCellText			(row, col, value)					{},
+	toggleOpenState		(index)								{}
+};
 
 
+var util = Object.freeze({
 	id: document.getElementById.bind(document)
 });
 
@@ -77,14 +107,8 @@ Object.defineProperties(Array.prototype, {
 
 
 
-const sort_types = Object.freeze({
-	DEFAULT: 0,
-	HREF: 1,
-	HOST: 2,
-	CHECKED: 3
-});
-
-
+/*
+TODO: implement sorting
 
 function sort_listbox (type, urls, listbox) {
 	function sort (items, fn) {
@@ -149,26 +173,25 @@ function sort_listbox (type, urls, listbox) {
 		listbox.appendChild(create_list_item(url.href, url.host, checked, listbox));
 	});
 }
+*/
 
 
-function copy_clipboard (all, listbox) {
-	const sep = "\n";
-
+function copy_clipboard (all) {
 	clipboard.set(all
-		? util.get_list_items(listbox).map(util.get_url)
-		: util.get_list_items(listbox)
-			.filter(util.is_checked)
-			.map(util.get_url)).join(sep);
+		? data.map(item => item.href)
+		: data
+			.filter(item => item.checked)
+			.map(item => item.href)).join("\n");
 }
 
-function bookmark_links (listbox) {
+function bookmark_links () {
 	const group = bookmarks.Group({
 		title: window.prompt(_("linky-select-bookmarkgroupname")),
 		group: bookmarks.MENU
 	});
 
-	bookmarks.save(util.get_list_items(listbox)
-		.filter(item => util.is_checked(item))
+	bookmarks.save(data
+		.filter(item => item.checked)
 		.map(item => bookmarks.Bookmark({
 			title: item.value,
 			url: item.value,
@@ -176,63 +199,53 @@ function bookmark_links (listbox) {
 		})));
 }
 
-function check_all (check, listbox) {
-	for (let item of util.get_list_items(listbox)) {
-		util.set_checked(item, check.checked);
-		check.indeterminate = false;
-	}
+function check_all (check) {
+	data.forEach(item => item.checked = check.checked);
 }
 
-function check_substring (listbox) {
-	const label = _("linky-select-part-confirm-label");
-
-	match_substring(label, listbox, item => util.set_checked(item, true));
-	determine_check_all_state(listbox);
+function check_substring () {
+	match_substring(_("linky-select-part-confirm-label"),
+			item => item.checked = true);
 }
 
-function uncheck_substring (listbox) {
-	const label = _("linky-select-partun-confirm-label");
-
-	match_substring(label, listbox, item => util.set_checked(item, false));
-	determine_check_all_state(listbox);
+function uncheck_substring () {
+	match_substring(_("linky-select-partun-confirm-label"),
+			item => item.checked = false);
 }
 
-function unescape_links (listbox) {
+function unescape_links () {
 	const url_param_regex = /.*\?\w+\=((ftp|https?):\/\/.*)[&|$]/i;
 
-	for (let item of util.get_list_items(listbox)) {
-		const url_new = util.get_url(item).match(url_param_regex)[1];
+	data.forEach(item => {
+		const new_url = item.href.match(url_param_regex);
 
-		if (regex.test(url_new)) {
-			const url_new_url = new URL(url_new);
-			util.set_url(item, url_new_url.href);
-			util.set_host(item, url_new_url.host);
+		if (regex.test(new_url)) {
+			const parsed = new URL(new_url);
+			item.href = parsed.href;
+			item.host = parsed.host;
 		}
-	}
+	});
 }
 
-function filter_substring (urls, sort_order, listbox) {
+function filter_substring (urls) {
 	const label = _("linky-select-partremove-confirm-label");
 
-	match_substring(label, listbox, function (item, substring) {
-		const url = util.get_url(item);
-		const url_new = url.replace(substring, "");
+	match_substring(label, function (item, substring) {
+		const new_url = item.href.replace(substring, "");
 
-		if (url_new !== url && regex.test(url_new)) {
-			const url_new_url = new URL(url_new);
-			util.set_url(item, url_new_url.href);
-			util.set_host(item, url_new_url.host);
+		if (item.href !== new_url && regex.test(new_url)) {
+			const parsed = new URL(new_url);
+			item.href = parsed.href;
+			item.host = parsed.host;
 		}
-	}, sort_order, urls);
+	});
 }
 
-function invert_selection (listbox) {
-	for (let item of listbox) {
-		util.set_checked(item, !util.is_checked(item));
-	}
+function invert_selection () {
+	data.forEach(item => item.checked = !item.checked);
 }
 
-function open_links (type, delay_enabled, listbox) {
+function open_links (type, delay_enabled) {
 	function open_link (url) {
 		tabs.open({
 			url: url,
@@ -249,12 +262,10 @@ function open_links (type, delay_enabled, listbox) {
 		is_cancelled = true;
 	});
 
-	util.get_list_items(listbox).forEach(function (item, i, items) {
-		if (!util.is_checked(item)) {
+	data.forEach((item, i , items) => {
+		if (!item.checked) {
 			return;
 		}
-
-		const url = util.get_url(item);
 
 		if (delay_enabled) {
 			timeouts.push(timers.setTimeout(function () {
@@ -264,7 +275,7 @@ function open_links (type, delay_enabled, listbox) {
 					window.close();
 
 				} else {
-					open_link(url);
+					open_link(item.href);
 				}
 			}, delay));
 
@@ -276,7 +287,7 @@ function open_links (type, delay_enabled, listbox) {
 				delay += prefs.delay;
 			}
 		} else {
-			open_link(url);
+			open_link(item.href);
 		}
 	});
 
@@ -286,73 +297,38 @@ function open_links (type, delay_enabled, listbox) {
 }
 
 
-function match_substring (label, callback, sort_order, urls, listbox) {
+function match_substring (label, callback) {
 	const substring = window.prompt(_("linky-select-partremove-confirm-label"));
 
-	for (let item of util.get_list_items(listbox)) {
-		if (util.get_url(item).includes(substring)) {
+	data.forEach(item => {
+		if (item.href.includes(substring)) {
 			callback(item, substring);
 		}
-	}
-	if (sort_order) {
-		sort_listbox(sort_order, urls, listbox);
-	}
-}
-
-function determine_check_all_state (listbox) {
-	const checkAllEle = util.id("check-all");
-	const checked = util.is_checked(util.get_list_items(listbox)[0]);
-	const indeterminate = !util.get_list_items(listbox).every(
-			item => util.is_checked(item) === checked);
-
-	checkAllEle.indeterminate = indeterminate;
-	if (!indeterminate) {
-		checkAllEle.checked = checked;
-	}
-}
-
-function create_list_item (url, host, checked, listbox) {
-	const item = document.createElement("listitem");
-
-	const colCheckbox = document.createElement("listcell");
-	const colUrl = document.createElement("listcell");
-	const colHost = document.createElement("listcell");
-
-	colCheckbox.setAttribute("type", "checkbox");
-
-	item.appendChild(colCheckbox);
-	item.appendChild(colUrl);
-	item.appendChild(colHost);
-
-	util.set_checked(item, checked);
-	util.set_url(item, url);
-	util.set_host(item, host);
-
-	item.addEventListener("click", function () {
-		util.set_checked(item, !util.is_checked(item));
 	});
-
-	colCheckbox.addEventListener("click", function () {
-		determine_check_all_state(listbox);
-	});
-
-	return item;
+	// TODO: sorting here
 }
 
 
 window.addEventListener("load", function () {
-	const urls = window.arguments[0].data.map(url => new URL(url));
-	const open_type = window.arguments[0].open_type;
-	const listbox = util.id("listbox");
+	data = window.arguments[0].data.map(url => {
+		let parsed = new URL(url);
+		return {
+			checked: true,
+			href: parsed.href,
+			host: parsed.host
+		};
+	});
 
-	for (let url of urls) {
-		listbox.appendChild(create_list_item(url.href, url.host, true, listbox));
-	}
+	tree = document.getElementById("link-tree");
+	tree.view = tree_view;
+
+	const open_type = window.arguments[0].open_type;
 
 	function cmd (id, fn, ev = "command") {
 		util.id(id).addEventListener(ev, fn, false);
 	}
 
+	/*
 	let sort_order = sort_types.DEFAULT;
 
 	function sort_default () {
@@ -371,6 +347,7 @@ window.addEventListener("load", function () {
 		sort_order = sort_types.CHECKED;
 		sort_listbox(sort_order, urls, listbox);
 	};
+	*/
 
 	function cancel () {
 		timers.setTimeout(function () {
@@ -380,6 +357,7 @@ window.addEventListener("load", function () {
 
 	// Context menu + headers
 
+	/*
 	cmd("sort-url",					sort_urls);
 	cmd("sort-url-header",			sort_urls, "click");
 
@@ -389,23 +367,24 @@ window.addEventListener("load", function () {
 	cmd("sort-default",				sort_default);
 
 	cmd("sort-checked-header",		sort_checked, "click");
+	*/
 
-	cmd("check-substr",		() =>	check_substring(listbox));
-	cmd("uncheck-substr",	() =>	uncheck_substring(listbox));
-	cmd("unescape",			() =>	unescape_links(listbox));
-	cmd("filter-substr",	() =>	filter_substring(urls, sort_order, listbox));
-	cmd("invert",			() =>	invert_selection(listbox));
-	cmd("clipboard-all",	() =>	copy_clipboard(true, listbox));
-	cmd("clipboard",		() =>	copy_clipboard(false, listbox));
-	cmd("bookmark",			() =>	bookmark_links(listbox));
+	cmd("check-substr",		() =>	check_substring());
+	cmd("uncheck-substr",	() =>	uncheck_substring());
+	cmd("unescape",			() =>	unescape_links());
+	cmd("filter-substr",	() =>	filter_substring());
+	cmd("invert",			() =>	invert_selection());
+	cmd("clipboard-all",	() =>	copy_clipboard(true));
+	cmd("clipboard",		() =>	copy_clipboard(false));
+	cmd("bookmark",			() =>	bookmark_links());
 
 
 	//Checkboxes
-	cmd("check-all",		(e) =>	check_all(e.target, listbox), "change");
-	//cmd("check-visited",	(e) => checkVisited(e.target, listbox));
+	cmd("check-all",		(e) =>	check_all(e.target), "change");
+	//cmd("check-visited",	(e) => checkVisited(e.target));
 
 	//Buttons
-	cmd("open-links",		() =>	open_links(open_type, util.id("delay").checked, listbox));
+	cmd("open-links",		() =>	open_links(open_type, util.id("delay").checked));
 	cmd("cancel",					cancel);
 
 }, false);

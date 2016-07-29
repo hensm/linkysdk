@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://global/skin/in-content/common.css"?>
+
 <?xml-stylesheet href="dialog.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://linkysdk/locale/main.dtd">
@@ -27,18 +29,14 @@
 		<caption id="intro" label="&linky-select-intro.label;"/>
 		<label id="info" value="" hidden="true"/>
 		<box flex="1">
-			<listbox id="listbox" flex="1" context="context">
-				<listhead>
-					<listheader id="sort-checked-header"/>
-					<listheader id="sort-url-header" label="URL"/>
-					<listheader id="sort-host-header" label="Host"/>
-				</listhead>
-				<listcols>
-					<listcol/>
-					<listcol flex="2"/>
-					<listcol flex="1"/>
-				</listcols>
-			</listbox>
+			<tree id="link-tree" flex="1" hidecolumnpicker="true" editable="true" seltype="single">
+				<treechildren id="link-tree-children" flex="1"/>
+				<treecols>
+					<treecol id="linkChecked" type="checkbox" editable="true"/>
+					<treecol id="link-tree-href" flex="2" label="URL"/>
+					<treecol id="link-tree-host" flex="1" label="Host" editable="true"/>
+				</treecols>
+			</tree>
 		</box>
 		<hbox>
 			<html:input id="check-all" type="checkbox" checked="true" accesskey="&linky-select-checkall.accesskey;"/>
