@@ -29,18 +29,17 @@
 		<caption id="intro" label="&linky-select-intro.label;"/>
 		<label id="info" value="" hidden="true"/>
 		<box flex="1">
-			<tree id="link-tree" flex="1" hidecolumnpicker="true" editable="true" seltype="single">
+			<tree id="link-tree" flex="1" hidecolumnpicker="true" editable="true" seltype="single" persist="sortDirection sortResource" sortDirection="ascending" sortResource="link-tree-href">
 				<treechildren id="link-tree-children" flex="1"/>
 				<treecols>
 					<treecol id="linkChecked" type="checkbox" editable="true"/>
-					<treecol id="link-tree-href" flex="2" label="URL"/>
-					<treecol id="link-tree-host" flex="1" label="Host" editable="true"/>
+					<treecol id="link-tree-href" flex="2" label="URL" sortDirection="ascending"/>
+					<treecol id="link-tree-host" flex="1" label="Host"/>
 				</treecols>
 			</tree>
 		</box>
 		<hbox>
-			<html:input id="check-all" type="checkbox" checked="true" accesskey="&linky-select-checkall.accesskey;"/>
-			<html:label for="check-all" title="&linky-select-checkall.tooltip;">&linky-select-checkall.label;</html:label>
+			<checkbox id="check-all" label="&linky-select-checkall.label;" tooltiptext="&linky-select-checkall.tooltip;" accesskey="&linky-select-checkall.accesskey;"/>
 			<checkbox id="check-visited" label="&linky-select-checkvisited.label;" tooltiptext="&linky-select-checkvisited.tooltip;" accesskey="&linky-select-checkvisited.accesskey;" checked="true"/>
 		</hbox>
 		<hbox>

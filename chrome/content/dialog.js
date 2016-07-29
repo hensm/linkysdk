@@ -13,11 +13,9 @@ const timers		= require("sdk/timers");
 
 
 
-const sort_types = Object.freeze({
-	DEFAULT: 0,
-	HREF: 1,
-	HOST: 2,
-	CHECKED: 3
+const sort_orders = Object.freeze({
+	ASC: "ascending",
+	DESC: "descending"
 });
 
 const columns = Object.freeze({
@@ -29,10 +27,10 @@ const columns = Object.freeze({
 
 // Main data
 // TODO: Find better way of doing this
-let tree;
 let data;
+let data_initial;
 
-var tree_view = {
+const tree_view = {
 	tree: null,
 
 	get rowCount () {
@@ -96,7 +94,7 @@ var tree_view = {
 };
 
 
-var util = Object.freeze({
+const util = Object.freeze({
 	id: document.getElementById.bind(document)
 });
 
@@ -107,74 +105,52 @@ Object.defineProperties(Array.prototype, {
 
 
 
-/*
-TODO: implement sorting
+function sort_tree (tree, column, order) {
+	function _sort (fn) {
+		return function (a, b) {
+			const prop_a = fn(a);
+			const prop_b = fn(b);
 
-function sort_listbox (type, urls, listbox) {
-	function sort (items, fn) {
-		return items
-			.slice()
-			.sort(function (a, b) {
-				const prop_a = fn(a);
-				const prop_b = fn(b);
-
-				if (prop_a < prop_b) {
-					return -1;
-				} else if (prop_a > prop_b) {
-					return 1;
-				} else {
-					return 0;
-				}
-			})
-			.map(item => [ new URL(util.get_url(item)), util.is_checked(item) ]);
+			if (prop_a < prop_b) {
+				return -1;
+			} else if (prop_a > prop_b) {
+				return 1;
+			} else {
+				return 0;
+			}
+		};
 	}
 
-	const list_items = util.get_list_items(listbox);
-
-	let new_list;
-	let header_id;
-
-	switch (type) {
-		case sort_types.CHECKED:
-			new_list = sort(list_items, item => util.is_checked(item));
-			header_id = "sort-checked-header";
-			util.reverse_sort_order(header_id, listbox);
+	switch (column) {
+		case columns.CHECKED:
+			data.sort(_sort(item => item.checked));
 			break;
-
-		case sort_types.HREF:
-			new_list = sort(list_items, item => util.get_url(item));
-			header_id = "sort-url-header";
-			util.reverse_sort_order(header_id, listbox);
+		case columns.HREF:
+			data.sort(_sort(item => item.href));
 			break;
-
-		case sort_types.HOST:
-			new_list = sort(list_items, item => util.get_host(item));
-			header_id = "sort-host-header";
-			util.reverse_sort_order(header_id, listbox);
-			break;
-
-		case sort_types.DEFAULT:
-			const checked_positions = list_items
-				.filter(util.is_checked)
-				.map(item => list_items.indexOf(item));
-			new_list = urls.map((url, i) => [ new URL(url), checked_positions.includes(i) ]);
-			util.clear_sort_order(listbox);
+		case columns.HOST:
+			data.sort(_sort(item => item.host));
 			break;
 	}
 
-
-	if (header_id && util.get_sort_order(header_id) === "descending") {
-		new_list.reverse();
+	console.log(order, sort_orders.DESC, order === sort_orders.DESC);
+	if (order === sort_orders.DESC) {
+		data.reverse();
 	}
 
-	util.get_list_items(listbox).forEach(function (item, i) {
-		const [ url, checked ] = new_list[i];
-		listbox.removeChild(item);
-		listbox.appendChild(create_list_item(url.href, url.host, checked, listbox));
+	tree.setAttribute("sortDirection", order);
+	tree.setAttribute("sortResource", column);
+
+	Array.from(tree.querySelectorAll("treecol")).forEach(treecol => {
+		if (treecol.id === column) {
+			treecol.setAttribute("sortDirection", order);
+		} else if (treecol.hasAttribute("sortDirection")) {
+			treecol.removeAttribute("sortDirection");
+		}
 	});
-}
-*/
 
+	tree_view.tree.invalidate();
+}
 
 function copy_clipboard (all) {
 	clipboard.set((all
@@ -203,14 +179,14 @@ function check_all (check) {
 	data.forEach(item => item.checked = check.checked);
 }
 
-function check_substring () {
+function check_substring (sort_column, sort_order, tree) {
 	match_substring(_("linky-select-part-confirm-label"),
-			item => item.checked = true);
+			item => item.checked = true, sort_column, sort_order, tree);
 }
 
-function uncheck_substring () {
+function uncheck_substring (sort_column, sort_order, tree) {
 	match_substring(_("linky-select-partun-confirm-label"),
-			item => item.checked = false);
+			item => item.checked = false, sort_column, sort_order, tree);
 }
 
 function unescape_links () {
@@ -227,7 +203,7 @@ function unescape_links () {
 	});
 }
 
-function filter_substring (urls) {
+function filter_substring (sort_column, sort_order, tree) {
 	const label = _("linky-select-partremove-confirm-label");
 
 	match_substring(label, function (item, substring) {
@@ -238,7 +214,7 @@ function filter_substring (urls) {
 			item.href = parsed.href;
 			item.host = parsed.host;
 		}
-	});
+	}, sort_column, sort_order, tree);
 }
 
 function invert_selection () {
@@ -297,7 +273,7 @@ function open_links (type, delay_enabled) {
 }
 
 
-function match_substring (label, callback) {
+function match_substring (label, callback, sort_column, sort_order, tree) {
 	const substring = window.prompt(_("linky-select-partremove-confirm-label"));
 
 	data.forEach(item => {
@@ -305,11 +281,15 @@ function match_substring (label, callback) {
 			callback(item, substring);
 		}
 	});
+	sort_tree(sort_column, sort_order, tree)
 	// TODO: sorting here
 }
 
 
 window.addEventListener("load", function () {
+	const tree = document.getElementById("link-tree");
+	const open_type = window.arguments[0].open_type;
+
 	data = window.arguments[0].data.map(url => {
 		let parsed = new URL(url);
 		return {
@@ -318,36 +298,9 @@ window.addEventListener("load", function () {
 			host: parsed.host
 		};
 	});
+	data_initial = data.slice();
 
-	tree = document.getElementById("link-tree");
 	tree.view = tree_view;
-
-	const open_type = window.arguments[0].open_type;
-
-	function cmd (id, fn, ev = "command") {
-		util.id(id).addEventListener(ev, fn, false);
-	}
-
-	/*
-	let sort_order = sort_types.DEFAULT;
-
-	function sort_default () {
-		sort_order = sort_types.DEFAULT;
-		sort_listbox(sort_order, urls, listbox);
-	};
-	function sort_urls () {
-		sort_order = sort_types.HREF;
-		sort_listbox(sort_order, urls, listbox);
-	};
-	function sort_hosts () {
-		sort_order = sort_types.HOST;
-		sort_listbox(sort_order, urls, listbox);
-	};
-	function sort_checked () {
-		sort_order = sort_types.CHECKED;
-		sort_listbox(sort_order, urls, listbox);
-	};
-	*/
 
 	function cancel () {
 		timers.setTimeout(function () {
@@ -355,24 +308,42 @@ window.addEventListener("load", function () {
 		}, 0);
 	}
 
-	// Context menu + headers
 
-	/*
-	cmd("sort-url",					sort_urls);
-	cmd("sort-url-header",			sort_urls, "click");
+	function cmd (id, fn, ev = "command") {
+		util.id(id).addEventListener(ev, fn, false);
+	}
 
-	cmd("sort-host",				sort_hosts);
-	cmd("sort-host-header",			sort_hosts, "click");
+	let sort_column = columns.HREF;
+	let sort_order = sort_orders.ASC;
 
-	cmd("sort-default",				sort_default);
+	function on_sort (ev) {
+		let old_sort_column = sort_column;
 
-	cmd("sort-checked-header",		sort_checked, "click");
-	*/
+		console.log(ev);
 
-	cmd("check-substr",		() =>	check_substring());
-	cmd("uncheck-substr",	() =>	uncheck_substring());
+		switch (ev.currentTarget.id) {
+			case "linkChecked":		sort_column = columns.CHECKED;	break;
+			case "link-tree-href":	sort_column = columns.HREF;		break;
+			case "link-tree-host":	sort_column = columns.HOST;		break;
+		}
+
+		if (sort_column === old_sort_column) {
+			sort_order = (sort_order === sort_orders.ASC)
+				? sort_orders.DESC
+				: sort_orders.ASC;
+		}
+
+		sort_tree(tree, sort_column, sort_order);
+	}
+
+	cmd("linkChecked", on_sort, "click");
+	cmd("link-tree-href", on_sort, "click");
+	cmd("link-tree-host", on_sort, "click");
+
+	cmd("check-substr",		() =>	check_substring(sort_column, sort_order, tree));
+	cmd("uncheck-substr",	() =>	uncheck_substring(sort_column, sort_order, tree));
 	cmd("unescape",			() =>	unescape_links());
-	cmd("filter-substr",	() =>	filter_substring());
+	cmd("filter-substr",	() =>	filter_substring(sort_column, sort_order, tree));
 	cmd("invert",			() =>	invert_selection());
 	cmd("clipboard-all",	() =>	copy_clipboard(true));
 	cmd("clipboard",		() =>	copy_clipboard(false));
