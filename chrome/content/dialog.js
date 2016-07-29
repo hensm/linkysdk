@@ -193,9 +193,9 @@ function bookmark_links () {
 	bookmarks.save(data
 		.filter(item => item.checked)
 		.map(item => bookmarks.Bookmark({
-			title: item.value,
-			url: item.value,
-			group: group
+			title: item.href,
+			url: item.href,
+			group
 		})));
 }
 
