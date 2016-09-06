@@ -25,8 +25,13 @@ const columns = Object.freeze({
 });
 
 
-// Main data
-// TODO: Find better way of doing this
+/*	Main data
+ *	TODO: Find better way of doing this
+ *
+ *	data contains current representation of tree
+ *	data_initial keeps the original order with any permanent changes to
+ * 		content / state
+ */
 let data;
 let data_initial;
 
@@ -203,7 +208,7 @@ function uncheck_substring (sort_column, sort_order, tree) {
 	sort_tree(tree, sort_column, sort_order);
 }
 
-function unescape_links () {
+function unescape_links (sort_column, sort_order, tree) {
 	const url_param_regex = /.*\?\w+\=((ftp|https?):\/\/.*)[&|$]/i;
 
 	data_initial.forEach(item => {
@@ -215,6 +220,8 @@ function unescape_links () {
 			item.host = parsed.host;
 		}
 	});
+
+	sort_tree(tree, sort_column, sort_order);
 }
 
 function filter_substring (sort_column, sort_order, tree) {
@@ -336,27 +343,29 @@ window.addEventListener("load", function () {
 		let old_sort_column = sort_column;
 
 		switch (ev.currentTarget.id) {
-			case "linkChecked":		sort_column = columns.CHECKED;	break;
-			case "link-tree-href":	sort_column = columns.HREF;		break;
-			case "link-tree-host":	sort_column = columns.HOST;		break;
+			case columns.CHECKED:	sort_column = columns.CHECKED;	break;
+			case columns.HREF:		sort_column = columns.HREF;		break;
+			case columns.HOST:		sort_column = columns.HOST;		break;
 		}
 
 		if (sort_column === old_sort_column) {
-			sort_order = (sort_order === sort_orders.ASC)
-				? sort_orders.DESC
-				: sort_orders.ASC;
+			if (sort_order === sort_orders.ASC) {
+				sort_order = sort_orders.DESC;
+			} else {
+				sort_order = sort_orders.ASC:
+			}
 		}
 
 		sort_tree(tree, sort_column, sort_order);
 	}
 
-	cmd("linkChecked", on_sort, "click");
-	cmd("link-tree-href", on_sort, "click");
-	cmd("link-tree-host", on_sort, "click");
+	cmd("linkChecked",		on_sort, "click");
+	cmd("link-tree-href",	on_sort, "click");
+	cmd("link-tree-host",	on_sort, "click");
 
 	cmd("check-substr",		() =>	check_substring(sort_column, sort_order, tree));
 	cmd("uncheck-substr",	() =>	uncheck_substring(sort_column, sort_order, tree));
-	cmd("unescape",			() =>	unescape_links());
+	cmd("unescape",			() =>	unescape_links(sort_column, sort_order, tree));
 	cmd("filter-substr",	() =>	filter_substring(sort_column, sort_order, tree));
 	cmd("invert",			() =>	invert_selection());
 	cmd("clipboard-all",	() =>	copy_clipboard(true));
