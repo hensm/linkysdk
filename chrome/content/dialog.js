@@ -352,7 +352,7 @@ window.addEventListener("load", function () {
 			if (sort_order === sort_orders.ASC) {
 				sort_order = sort_orders.DESC;
 			} else {
-				sort_order = sort_orders.ASC:
+				sort_order = sort_orders.ASC;
 			}
 		}
 

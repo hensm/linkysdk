@@ -1,15 +1,18 @@
 @namespace "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-#link-tree treechildren::-moz-tree-image(linkChecked, checked) {
-  list-style-image: url("chrome://global/skin/in-content/check.svg#check");
-  width: 21px;
-  height: 21px;
+/*
+	Hacky way to get native-styled checkboxes in a xul tree column to match the
+	original add-on.
+*/
+
+#checkbox-stack {
+	height: 0;
+	overflow: hidden;
 }
 
-#link-tree treechildren::-moz-tree-image(linkChecked, checked, selected) {
-  list-style-image: url("chrome://global/skin/in-content/check.svg#check-inverted");
+treechildren::-moz-tree-checkbox {
+	background-image: -moz-element(#checkbox-unchecked);
 }
-
-/*#link-tree treechildren::-moz-tree-row {
-  min-height: 36px;
-}*/
+treechildren::-moz-tree-checkbox(checked) {
+	background-image: -moz-element(#checkbox-checked);
+}

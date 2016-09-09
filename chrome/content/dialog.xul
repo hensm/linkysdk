@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<?xml-stylesheet href="chrome://global/skin/in-content/common.css"?>
+<!--<?xml-stylesheet href="chrome://global/skin/in-content/common.css"?>-->
 
 <?xml-stylesheet href="dialog.css" type="text/css"?>
 
@@ -59,4 +59,8 @@
 		<button id="open-links" label="&linky-select-openlinks.label;" tooltiptext="&linky-select-openlinks.tooltip;" accesskey="&linky-select-openlinks.accesskey;"/>
 		<button id="cancel" label="&linky-select-cancel.label;" tooltiptext="&linky-select-cancel.tooltip;" accesskey="&linky-select-cancel.accesskey;"/>
 	</hbox>
+	<stack id="checkbox-stack">
+		<checkbox id="checkbox-unchecked"></checkbox>
+		<checkbox id="checkbox-checked" checked="true"></checkbox>
+	</stack>
 </window>
