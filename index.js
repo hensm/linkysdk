@@ -199,7 +199,12 @@ function on_menu_pref_change () {
 			if (open_type) {
 				window_utils.openDialog({
 					url: SELECT_DIALOG_URL,
-					features: "chrome,centerscreen,resizable=yes",
+					features:`
+							chrome,
+							centerscreen,
+							resizable=yes,
+							width=${simple_prefs.prefs.dialog_width},
+							height=${simple_prefs.prefs.dialog_height}`,
 					args: {
 						data: msg.payload,
 						require,

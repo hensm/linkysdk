@@ -51,6 +51,9 @@
 		{ "name": "download.directory",				"type": "string", 	"value": "",	"title": "_", "hidden": true },
 		{ "name": "download.directory.remember",	"type": "bool",		"value": true,	"title": "_", "hidden": true },
 
-		{ "name": "developer",						"type": "bool",		"value": false,	"title": "_", "hidden": true }
+		{ "name": "developer",						"type": "bool",		"value": false,	"title": "_", "hidden": true },
+
+		{ "name": "dialog_width",					"type": "integer",	"value": 640,	"title": "_" },
+		{ "name": "dialog_height",					"type": "integer",	"value": 480,	"title": "_" }
 	]
 }
