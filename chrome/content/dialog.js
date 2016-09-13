@@ -28,6 +28,11 @@ const sort_orders = Object.freeze({
 });
 
 
+// Globals
+let tree;
+let sort_column = sort.HREF;
+let sort_order = sort_orders.ASC;
+
 
 /*	
  *	TODO: Find better way of doing this
@@ -120,7 +125,7 @@ Object.defineProperties(Array.prototype, {
  *	after any changes to content/state which would affect
  *	the current sort order
  */
-function sort_tree (tree, column, order) {
+function sort_tree () {
 
 	/*
 	 *	Helper function to create a sort function comparing
@@ -146,25 +151,25 @@ function sort_tree (tree, column, order) {
 	data = data_initial.slice();
 
 	// Doesn't sort if column is sort.DEFAULT
-	switch (column) {
+	switch (sort_column) {
 		case sort.CHECKED:	data.sort(_sort(item => item.checked));	break;
 		case sort.HREF:		data.sort(_sort(item => item.href));	break;
 		case sort.HOST:		data.sort(_sort(item => item.host));	break;
 	}
 
 	// Reverse if descending sort order
-	if (order === sort_orders.DESC) {
+	if (sort_order === sort_orders.DESC) {
 		data.reverse();
 	}
 
 	// Reflect current sort order on the tree UI
-	tree.setAttribute("sortDirection", order);
-	tree.setAttribute("sortResource", column);
+	tree.setAttribute("sortDirection", sort_order);
+	tree.setAttribute("sortResource", sort_column);
 
 	// Remove any previously set sortDirection attributes
 	Array.from(tree.querySelectorAll("treecol")).forEach(treecol => {
-		if (treecol.id === column) {
-			treecol.setAttribute("sortDirection", order);
+		if (treecol.id === sort_column) {
+			treecol.setAttribute("sortDirection", sort_order);
 		} else if (treecol.hasAttribute("sortDirection")) {
 			treecol.removeAttribute("sortDirection");
 		}
@@ -205,19 +210,19 @@ function bookmark_links () {
  *	Sets all items' checked state to that of the checked
  *	argument
  */
-function check_all (is_checked, sort_column, sort_order, tree) {
+function check_all (is_checked) {
 	data_initial.forEach(item => item.checked = is_checked);
 
 	// Update tree
-	sort_tree(tree, sort_column, sort_order);
+	sort_tree();
 }
 
 /*
  *	Prompts for a string and checks/unchecks items
  *	containing it as a substring
  */
-function check_substring (is_checked, sort_column, sort_order, tree) {
-	const substring = window.prompt(checked
+function check_substring (is_checked) {
+	const substring = window.prompt(is_checked
 		? _("linky-select-part-confirm-label")
 		: _("linky-select-partun-confirm-label"));
 
@@ -228,14 +233,14 @@ function check_substring (is_checked, sort_column, sort_order, tree) {
 	});
 
 	// Update tree
-	sort_tree(tree, sort_column, sort_order);
+	sort_tree();
 }
 
 /*
  *	Finds a URL within a query parameter of existing URLs
  *	and replaces existing items with that URL
  */
-function unescape_links (sort_column, sort_order, tree) {
+function unescape_links () {
 	const url_param_regex = /.*\?\w+\=((ftp|https?):\/\/.*)[&|$]/i;
 
 	data_initial.forEach(item => {
@@ -250,29 +255,31 @@ function unescape_links (sort_column, sort_order, tree) {
 	});
 
 	// Update tree
-	sort_tree(tree, sort_column, sort_order);
+	sort_tree();
 }
 
 /*
- *	Prompts for a string and removes it from all items
- *	containing it as a substring
+ *	Prompts for a string and removes it from all selected
+ *	items containing it as a substring
  */
-function filter_substring (sort_column, sort_order, tree) {
+function filter_substring () {
 	const substring = window.prompt(_("linky-select-partremove-confirm-label"));
 
-	data_initial.forEach(item => {
-		const new_url = item.href.replace(substring, "");
+	data_initial
+		.filter(item => item.checked)
+		.forEach(item => {
+			const new_url = item.href.replace(substring, "");
 
-		// Test if it's changed and is still a valid URL
-		if (item.href !== new_url && regex.test(new_url)) {
-			const parsed = new URL(new_url);
-			item.href = parsed.href;
-			item.host = parsed.host;
-		}
-	});
+			// Test if it's changed and is still a valid URL
+			if (item.href !== new_url && regex.test(new_url)) {
+				const parsed = new URL(new_url);
+				item.href = parsed.href;
+				item.host = parsed.host;
+			}
+		});
 
 	// Update tree
-	sort_tree(tree, sort_column, sort_order);
+	sort_tree();
 }
 
 /*
@@ -357,8 +364,7 @@ window.addEventListener("load", function () {
 	// "win" or "tab"
 	const open_type = window.arguments[0].open_type;
 
-	// XUL tree element
-	const tree = document.getElementById("link-tree");
+	tree = document.getElementById("link-tree");
 
 	// Parse URLs for host property and add default checked state
 	data = window.arguments[0].data.map(url => {
@@ -382,10 +388,6 @@ window.addEventListener("load", function () {
 		util.id(id).addEventListener(ev, fn, false);
 	}
 
-	// Set default sort column and sort order
-	let sort_column = sort.HREF;
-	let sort_order = sort_orders.ASC;
-
 	/*
 	 *	Sets column/order when triggered by treecol sort UI
 	 *	and sorts data	
@@ -407,7 +409,7 @@ window.addEventListener("load", function () {
 			}
 		}
 
-		sort_tree(tree, sort_column, sort_order);
+		sort_tree();
 	}
 
 	// Treecol sort UI headers
@@ -416,10 +418,10 @@ window.addEventListener("load", function () {
 	cmd("link-tree-host",	on_sort, "click");
 	cmd("sort-default", 	on_sort);
 
-	cmd("check-substr",		() =>	check_substring(true, sort_column, sort_order, tree));
-	cmd("uncheck-substr",	() =>	check_substring(false, sort_column, sort_order, tree));
-	cmd("unescape",			() =>	unescape_links(sort_column, sort_order, tree));
-	cmd("filter-substr",	() =>	filter_substring(sort_column, sort_order, tree));
+	cmd("check-substr",		() =>	check_substring(true));
+	cmd("uncheck-substr",	() =>	check_substring(false));
+	cmd("unescape",			() =>	unescape_links());
+	cmd("filter-substr",	() =>	filter_substring());
 	cmd("invert",			() =>	invert_selection());
 	cmd("clipboard-all",	() =>	copy_clipboard(true));
 	cmd("clipboard",		() =>	copy_clipboard(false));
@@ -427,7 +429,7 @@ window.addEventListener("load", function () {
 
 
 	// Checkboxes
-	cmd("check-all",		(e) =>	check_all(e.target.checked, sort_column, sort_order, tree), "change");
+	cmd("check-all",		(e) =>	check_all(e.target.checked));
 
 	// Buttons
 	cmd("open-links",		() =>	open_links(open_type, util.id("delay").checked));
