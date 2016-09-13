@@ -1,64 +1,142 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
-<!--<?xml-stylesheet href="chrome://global/skin/in-content/common.css"?>-->
-
 <?xml-stylesheet href="dialog.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://linkysdk/locale/main.dtd">
 
-<window xmlns:html="http://www.w3.org/1999/xhtml" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&linky-select-title.label;" width="400" height="330" persist="width height screenX screenY">
-	<script src="dialog.js"/>
+<dialog
+		xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+		title="&linky-select-title.label;"
+		contextmenu="context"
+		buttonlabelaccept="&linky-select-openlinks.label;"
+		buttonaccesskeyaccept="&linky-select-openlinks.accesskey;"
+		buttonlabelcancel="&linky-select-cancel.label;"
+		buttonaccesskeycancel="&linky-select-cancel.accesskey;"
+		ondialogaccept="on_dialogaccept(); return false;"
+		ondialogcancel="on_dialogcancel(); return false;">
+
+	<script src="dialog.js"></script>
+
 	<keyset>
 		<key keycode="VK_ESCAPE"></key>
 	</keyset>
+
 	<menupopup id="context" position="before_start">
-		<menuitem id="sort-default" label="&linky-select-sort-org.label;" tooltiptext="&linky-select-sort-org.tooltip;"/>
-		<menuitem id="check-substr" label="&linky-select-part.label;" tooltiptext="&linky-select-part.tooltip;"/>
-		<menuitem id="uncheck-substr" label="&linky-select-partun.label;" tooltiptext="&linky-select-partun.tooltip;"/>
-		<menuitem id="unescape" label="&linky-select-unesc.label;" tooltiptext="&linky-select-unesc.tooltip;"/>
-		<menuitem id="mark-visited" label="&linky-select-markvisit.label;" tooltiptext="&linky-select-markvisit.tooltip;"/>
-		<menuitem id="filter-substr" label="&linky-select-partremove.label;" tooltiptext="&linky-select-partremove.tooltip;"/>
-		<menuitem id="invert" label="&linky-select-invert.label;" tooltiptext="&linky-select-invert.tooltip;"/>
-		<menuitem id="clipboard-all" label="&linky-select-clipboard-all.label;" tooltiptext="&linky-select-clipboard-all.tooltip;"/>
-		<menuitem id="clipboard" label="&linky-select-clipboard.label;" tooltiptext="&linky-select-clipboard.tooltip;"/>
-		<menuitem id="bookmark" label="&linky-select-bookmark.label;" tooltiptext="&linky-select-bookmark.tooltip;"/>
+		<menuitem
+				id="sort-default"
+				label="&linky-select-sort-org.label;"
+				tooltiptext="&linky-select-sort-org.tooltip;"
+				oncommand="on_sort"/>
+		<menuitem
+				id="check-substr"
+				label="&linky-select-part.label;"
+				tooltiptext="&linky-select-part.tooltip;"
+				oncommand="check_substring(true)"/>
+		<menuitem
+				id="uncheck-substr"
+				label="&linky-select-partun.label;"
+				tooltiptext="&linky-select-partun.tooltip;"
+				oncommand="check_substring(false)"/>
+		<menuitem
+				id="unescape"
+				label="&linky-select-unesc.label;"
+				tooltiptext="&linky-select-unesc.tooltip;"
+				oncommand="unescape_links()"/>
+		<!--<menuitem
+				id="mark-visited"
+				label="&linky-select-markvisit.label;"
+				tooltiptext="&linky-select-markvisit.tooltip;"/>-->
+		<menuitem
+				id="filter-substr"
+				label="&linky-select-partremove.label;"
+				tooltiptext="&linky-select-partremove.tooltip;"
+				oncommand="filter_substring()"/>
+		<menuitem
+				id="invert"
+				label="&linky-select-invert.label;"
+				tooltiptext="&linky-select-invert.tooltip;"
+				oncommand="invert_selection()"/>
+		<menuitem
+				id="clipboard-all"
+				label="&linky-select-clipboard-all.label;"
+				tooltiptext="&linky-select-clipboard-all.tooltip;"
+				oncommand="copy_clipboard(true)"/>
+		<menuitem
+				id="clipboard"
+				label="&linky-select-clipboard.label;"
+				tooltiptext="&linky-select-clipboard.tooltip;"
+				oncommand="copy_clipboard(false)"/>
+		<menuitem
+				id="bookmark"
+				label="&linky-select-bookmark.label;"
+				tooltiptext="&linky-select-bookmark.tooltip;"
+				oncommand="bookmark_links()"/>
 	</menupopup>
-	<groupbox flex="1">
-		<caption id="intro" label="&linky-select-intro.label;"/>
-		<label id="info" value="" hidden="true"/>
-		<box flex="1">
-			<tree id="link-tree" flex="1" hidecolumnpicker="true" editable="true" seltype="single" persist="sortDirection sortResource" sortDirection="ascending" sortResource="link-tree-href">
-				<treechildren id="link-tree-children" flex="1"/>
-				<treecols>
-					<treecol id="linkChecked" type="checkbox" editable="true"/>
-					<treecol id="link-tree-href" flex="2" label="URL" sortDirection="ascending"/>
-					<treecol id="link-tree-host" flex="1" label="Host"/>
-				</treecols>
-			</tree>
-		</box>
-		<hbox>
-			<checkbox id="check-all" label="&linky-select-checkall.label;" tooltiptext="&linky-select-checkall.tooltip;" accesskey="&linky-select-checkall.accesskey;"/>
-			<checkbox id="check-visited" label="&linky-select-checkvisited.label;" tooltiptext="&linky-select-checkvisited.tooltip;" accesskey="&linky-select-checkvisited.accesskey;" checked="true"/>
-		</hbox>
-		<hbox>
-			<checkbox label="&linky-select-delay.label;" id="delay"/>
-		</hbox>
-	</groupbox>
-	<groupbox id="download" hidden="true">
-		<caption label="&linky-select-download.caption;"/>
-		<hbox align="center">
-			<filefield flex="1" id="download-dir"/>
-			<button label="&linky-select-download.label;" tooltiptext="&linky-select-download.tooltip;" accesskey="&linky-select-download.accesskey;"/>
-		</hbox>
-	</groupbox>
-	<hbox>
-		<button label="&linky-select-commands.label;" popup="context" type="menu"/>
-		<spacer flex="1"/>
-		<button id="open-links" label="&linky-select-openlinks.label;" tooltiptext="&linky-select-openlinks.tooltip;" accesskey="&linky-select-openlinks.accesskey;"/>
-		<button id="cancel" label="&linky-select-cancel.label;" tooltiptext="&linky-select-cancel.tooltip;" accesskey="&linky-select-cancel.accesskey;"/>
-	</hbox>
+
 	<stack id="checkbox-stack">
 		<checkbox id="checkbox-unchecked"></checkbox>
 		<checkbox id="checkbox-checked" checked="true"></checkbox>
 	</stack>
-</window>
+
+	<groupbox flex="1">
+		<caption label="&linky-select-intro.label;"/>
+		<label id="info" value="" hidden="true"></label>
+		<box flex="1">
+			<tree	id="link-tree"
+					flex="1"
+					editable="true"
+					seltype="single"
+					persist="sortDirection sortResource"
+					sortDirection="ascending"
+					sortResource="link-tree-href">
+
+				<treechildren id="link-tree-children" flex="1"/>
+				<treecols>
+					<treecol
+							id="linkChecked"
+							type="checkbox"
+							editable="true"
+							onclick="on_sort"/>
+					<treecol
+							id="link-tree-href"
+							flex="2"
+							label="URL"
+							onclick="on_sort"
+							sortDirection="ascending"/>
+					<treecol
+							id="link-tree-host"
+							flex="1"
+							label="Host"
+							onclick="on_sort"/>
+				</treecols>
+			</tree>
+		</box>
+		<hbox>
+			<checkbox
+					id="check-all"
+					label="&linky-select-checkall.label;"
+					tooltiptext="&linky-select-checkall.tooltip;"
+					accesskey="&linky-select-checkall.accesskey;"
+					oncommand="check_all(this.checked)"/>
+			<!--<checkbox
+					id="check-visited"
+					label="&linky-select-checkvisited.label;"
+					tooltiptext="&linky-select-checkvisited.tooltip;"
+					accesskey="&linky-select-checkvisited.accesskey;"
+					checked="true"/>-->
+		</hbox>
+		<hbox>
+			<checkbox label="&linky-select-delay.label;" id="delay"/>
+		</hbox>
+		<groupbox id="download" hidden="true">
+			<caption label="&linky-select-download.caption;"/>
+			<hbox align="center">
+				<filefield flex="1" id="download-dir"/>
+				<button
+						label="&linky-select-download.label;"
+						tooltiptext="&linky-select-download.tooltip;"
+						accesskey="&linky-select-download.accesskey;"/>
+			</hbox>
+		</groupbox>
+	</groupbox>
+</dialog>

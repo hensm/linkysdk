@@ -33,8 +33,11 @@ let tree;
 let sort_column = sort.HREF;
 let sort_order = sort_orders.ASC;
 
+let is_cancelled = false;
+const { open_type } = window.arguments[0];
 
-/*	
+
+/**	
  *	TODO: Find better way of doing this
  *
  *	data contains current representation of tree
@@ -120,14 +123,14 @@ Object.defineProperties(Array.prototype, {
 });
 
 
-/*	
+/**	
  *	Gets called when user interacts with treecol sort UI or
  *	after any changes to content/state which would affect
  *	the current sort order
  */
 function sort_tree () {
 
-	/*
+	/**
 	 *	Helper function to create a sort function comparing
 	 *	properties modified by a function passed in as the
 	 *	fn argument
@@ -179,7 +182,7 @@ function sort_tree () {
 	tree_view.tree.invalidate();
 }
 
-/*
+/**
  *	Copies href property of all/checked items to clipboard
  */
 function copy_clipboard (all) {
@@ -187,7 +190,7 @@ function copy_clipboard (all) {
 		.map(item => item.href).join("\n"));
 }
 
-/*
+/**
  *	Prompts for a name and creates a new folder in the
  *	bookmarks menu. Saves all checked items within that folder
  */
@@ -206,7 +209,7 @@ function bookmark_links () {
 		})));
 }
 
-/*
+/**
  *	Sets all items' checked state to that of the checked
  *	argument
  */
@@ -217,7 +220,7 @@ function check_all (is_checked) {
 	sort_tree();
 }
 
-/*
+/**
  *	Prompts for a string and checks/unchecks items
  *	containing it as a substring
  */
@@ -236,7 +239,7 @@ function check_substring (is_checked) {
 	sort_tree();
 }
 
-/*
+/**
  *	Finds a URL within a query parameter of existing URLs
  *	and replaces existing items with that URL
  */
@@ -258,7 +261,7 @@ function unescape_links () {
 	sort_tree();
 }
 
-/*
+/**
  *	Prompts for a string and removes it from all selected
  *	items containing it as a substring
  */
@@ -282,7 +285,7 @@ function filter_substring () {
 	sort_tree();
 }
 
-/*
+/**
  *	Loops through all items and inverts checked state
  */
 function invert_selection () {
@@ -292,13 +295,13 @@ function invert_selection () {
 	tree_view.tree.invalidate();
 }
 
-/*
+/**
  *	Opens links in windows/tabs, deals with timing, and
  *	closes dialog when finished
  */
 function open_links (type, delay_enabled) {
 
-	/*
+	/**
 	 *	Helper function to open url with predefined settings
 	 */
 	function open_link (url) {
@@ -310,13 +313,7 @@ function open_links (type, delay_enabled) {
 	}
 
 	let delay = 0;
-	let is_cancelled = false;
 	const timeouts = [];
-
-	// Stop opening new links if the dialog is cancelled
-	util.id("cancel").addEventListener("command", function () {
-		is_cancelled = true;
-	});
 
 	data
 		.filter(item => item.checked)
@@ -359,11 +356,44 @@ function open_links (type, delay_enabled) {
 }
 
 
+
+
+/**
+ *	Sets column/order when triggered by treecol sort UI
+ *	and sorts data	
+ */
+function on_sort ({ currentTarget: { id }}) {
+	let old_sort_column = sort_column;
+
+	// Is valid sort type
+	if (Object.values(sort).includes(id)) {
+		sort_column = id;
+	}
+
+	// Handle swapping sort order
+	if (sort_column === old_sort_column) {
+		if (sort_order === sort_orders.ASC) {
+			sort_order = sort_orders.DESC;
+		} else {
+			sort_order = sort_orders.ASC;
+		}
+	}
+
+	sort_tree();
+}
+
+function on_dialogaccept (e) {
+	open_links(open_type, util.id("delay").checked);
+}
+function on_dialogcancel () {
+	is_cancelled = true;
+	timers.setTimeout(function () {
+		window.close();
+	}, 0);
+}
+
+// Initial setup
 window.addEventListener("load", function () {
-
-	// "win" or "tab"
-	const open_type = window.arguments[0].open_type;
-
 	tree = document.getElementById("link-tree");
 
 	// Parse URLs for host property and add default checked state
@@ -375,69 +405,9 @@ window.addEventListener("load", function () {
 			host
 		};
 	});
-	// Copy at initial state
-	data_initial = data.slice();
 
 	tree.view = tree_view;
 
-	/*
-	 *	Helper function to assign actions to UI with default
-	 *	"command" event
-	 */
-	function cmd (id, fn, ev = "command") {
-		util.id(id).addEventListener(ev, fn, false);
-	}
-
-	/*
-	 *	Sets column/order when triggered by treecol sort UI
-	 *	and sorts data	
-	 */
-	function on_sort ({ currentTarget: { id }}) {
-		let old_sort_column = sort_column;
-
-		// Is valid sort type
-		if (Object.values(sort).includes(id)) {
-			sort_column = id;
-		}
-
-		// Handle swapping sort order
-		if (sort_column === old_sort_column) {
-			if (sort_order === sort_orders.ASC) {
-				sort_order = sort_orders.DESC;
-			} else {
-				sort_order = sort_orders.ASC;
-			}
-		}
-
-		sort_tree();
-	}
-
-	// Treecol sort UI headers
-	cmd("linkChecked",		on_sort, "click");
-	cmd("link-tree-href",	on_sort, "click");
-	cmd("link-tree-host",	on_sort, "click");
-	cmd("sort-default", 	on_sort);
-
-	cmd("check-substr",		() =>	check_substring(true));
-	cmd("uncheck-substr",	() =>	check_substring(false));
-	cmd("unescape",			() =>	unescape_links());
-	cmd("filter-substr",	() =>	filter_substring());
-	cmd("invert",			() =>	invert_selection());
-	cmd("clipboard-all",	() =>	copy_clipboard(true));
-	cmd("clipboard",		() =>	copy_clipboard(false));
-	cmd("bookmark",			() =>	bookmark_links());
-
-
-	// Checkboxes
-	cmd("check-all",		(e) =>	check_all(e.target.checked));
-
-	// Buttons
-	cmd("open-links",		() =>	open_links(open_type, util.id("delay").checked));
-
-	cmd("cancel", () => {
-		timers.setTimeout(function () {
-			window.close();
-		}, 0);
-	});
-
+	// Copy at initial state
+	data_initial = data.slice();
 }, false);
