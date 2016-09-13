@@ -15,16 +15,18 @@ const timers		= require("sdk/timers");
 
 // Constants used in functions relating to sorting / treecols
 
+const sort = Object.freeze({
+	CHECKED: "linkChecked",
+	HREF: "link-tree-href",
+	HOST: "link-tree-host",
+	DEFAULT: "sort-default"
+});
+
 const sort_orders = Object.freeze({
 	ASC: "ascending",
 	DESC: "descending"
 });
 
-const columns = Object.freeze({
-	CHECKED: "linkChecked",
-	HREF: "link-tree-href",
-	HOST: "link-tree-host"
-});
 
 
 /*	
@@ -47,23 +49,23 @@ const tree_view = {
 
 	getCellText (row, col) {
 		switch (col.id) {
-			case columns.HREF:	return data[row].href;
-			case columns.HOST:	return data[row].host;
+			case sort.HREF:	return data[row].href;
+			case sort.HOST:	return data[row].host;
 
 			default:
 				return "";
 		}
 	},
 	getCellValue (row, col) {
-		if (col.id === columns.CHECKED) {
+		if (col.id === sort.CHECKED) {
 			return data[row].checked;
 		}
 	},
 	isEditable (row, col) {
-		return col.id === columns.CHECKED;
+		return col.id === sort.CHECKED;
 	},
 	setCellValue (row, col, value) {
-		if (col.id === columns.CHECKED) {
+		if (col.id === sort.CHECKED) {
 			data[row].checked = value == "true";
 			this.tree.invalidate();
 		}
@@ -143,16 +145,11 @@ function sort_tree (tree, column, order) {
 	// Start over with original order
 	data = data_initial.slice();
 
+	// Doesn't sort if column is sort.DEFAULT
 	switch (column) {
-		case columns.CHECKED:
-			data.sort(_sort(item => item.checked));
-			break;
-		case columns.HREF:
-			data.sort(_sort(item => item.href));
-			break;
-		case columns.HOST:
-			data.sort(_sort(item => item.host));
-			break;
+		case sort.CHECKED:	data.sort(_sort(item => item.checked));	break;
+		case sort.HREF:		data.sort(_sort(item => item.href));	break;
+		case sort.HOST:		data.sort(_sort(item => item.host));	break;
 	}
 
 	// Reverse if descending sort order
@@ -386,23 +383,22 @@ window.addEventListener("load", function () {
 	}
 
 	// Set default sort column and sort order
-	let sort_column = columns.HREF;
+	let sort_column = sort.HREF;
 	let sort_order = sort_orders.ASC;
 
 	/*
 	 *	Sets column/order when triggered by treecol sort UI
 	 *	and sorts data	
 	 */
-	function on_sort (ev) {
+	function on_sort ({ currentTarget: { id }}) {
 		let old_sort_column = sort_column;
 
-		// Set sort column to id of clicked treecol
-		switch (ev.currentTarget.id) {
-			case columns.CHECKED:	sort_column = columns.CHECKED;	break;
-			case columns.HREF:		sort_column = columns.HREF;		break;
-			case columns.HOST:		sort_column = columns.HOST;		break;
+		// Is valid sort type
+		if (Object.values(sort).includes(id)) {
+			sort_column = id;
 		}
 
+		// Handle swapping sort order
 		if (sort_column === old_sort_column) {
 			if (sort_order === sort_orders.ASC) {
 				sort_order = sort_orders.DESC;
@@ -418,6 +414,7 @@ window.addEventListener("load", function () {
 	cmd("linkChecked",		on_sort, "click");
 	cmd("link-tree-href",	on_sort, "click");
 	cmd("link-tree-host",	on_sort, "click");
+	cmd("sort-default", 	on_sort);
 
 	cmd("check-substr",		() =>	check_substring(true, sort_column, sort_order, tree));
 	cmd("uncheck-substr",	() =>	check_substring(false, sort_column, sort_order, tree));

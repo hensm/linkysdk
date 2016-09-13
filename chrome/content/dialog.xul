@@ -12,8 +12,6 @@
 		<key keycode="VK_ESCAPE"></key>
 	</keyset>
 	<menupopup id="context" position="before_start">
-		<menuitem id="sort-url" label="&linky-select-sort-URL.label;" tooltiptext="&linky-select-sort-URL.tooltip;"/>
-		<menuitem id="sort-host" label="&linky-select-sort-host.label;" tooltiptext="&linky-select-sort-host.tooltip;"/>
 		<menuitem id="sort-default" label="&linky-select-sort-org.label;" tooltiptext="&linky-select-sort-org.tooltip;"/>
 		<menuitem id="check-substr" label="&linky-select-part.label;" tooltiptext="&linky-select-part.tooltip;"/>
 		<menuitem id="uncheck-substr" label="&linky-select-partun.label;" tooltiptext="&linky-select-partun.tooltip;"/>
