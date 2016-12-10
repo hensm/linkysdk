@@ -161,7 +161,8 @@ function on_menu_pref_change () {
 
 	info_item.on("message", msg => {
 		info_item.label = _("linky-info",
-				msg.linkCount.toString(), msg.imageCount.toString());
+				msg.link_count.toString(),
+				msg.image_count.toString());
 	});
 
 	menu.on("message", msg => {

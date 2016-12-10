@@ -1,4 +1,6 @@
+"use strict";
+
 self.postMessage({
-	linkCount: document.links.length,
-	imageCount: document.images.length
+	link_count: document.links.length,
+	image_count: document.images.length
 });

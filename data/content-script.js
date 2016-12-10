@@ -1,46 +1,57 @@
-let href = link => link.href;
-let getLinks = () => Array.prototype.filter.call(document.links, href);
-let getImages = () => Array.prototype.map.call(
-		document.images, image => image.src);
+"use strict";
 
-function getSelectedTextLinks() {
-	return window.getSelection().toString().split(/\s+/)
-		.filter(a => a.length && re_weburl.test(a));
+function get_links () {
+	return Array.from(document.links).map(link => link.href);
 }
-function getSelectedLinks() {
+function get_images () {
+	return Array.from(document.images).map(img => img.src);
+}
+
+function get_selected_links () {
 	try {
-		let selection = window.getSelection();
-		let links = selection.getRangeAt(0).commonAncestorContainer
+		const selection = window.getSelection();
+		const links = selection.getRangeAt(0)
+			.commonAncestorContainer
 			.querySelectorAll("a[href], area[href]");
-		return Array.prototype.filter.call(
-				links, node => selection.containsNode(node, true)).map(href);
-	} catch(e) {
+
+		return Array.from(links)
+			.filter(link => selection.containsNode(link, true))
+			.map(link => link.href);
+	} catch (e) {
 		return null;
 	}
 }
 
-function getImageLinks() {
-	return getLinks().filter(link => link.firstChild
-		&& link.firstChild.tagName === "IMG").map(href);
+function get_selected_text_links () {
+	return window.getSelection()
+		.toString()
+		.split(/\s+/)
+		.filter(a => a.length && re_weburl.test(a));
+}
+
+function get_image_links () {
+	return get_links()
+		.filter(link => link.firstChild && link.firstChild.nodeName === "IMG")
+		.map(link => link.href);
 }
 
 
-let emit = function(subjects, payload) {
-	let data = payload();
-	if (data && data.length) {
-		subjects.forEach(subject => {
-			if (subject === self.options.name) {
-				self.postMessage({
-					subject: subject,
-					payload: data
-				});
-			}
+
+function emit (subjects, payload) {
+	const data = payload();
+	const subject = self.options.name;
+
+	if (data && data.length && subjects.includes(subject)) {
+		self.postMessage({
+			subject,
+			payload: data
 		});
 	}
-};
+}
 
-emit(self.options.actions.selectedLinks,		() => getSelectedLinks());
-emit(self.options.actions.selectedTextLinks,	() => getSelectedTextLinks());
-emit(self.options.actions.links,				() => getLinks().map(href));
-emit(self.options.actions.images,				() => getImages());
-emit(self.options.actions.imageLinks,			() => getImageLinks());
+
+emit(self.options.actions.links				,	get_links				);
+emit(self.options.actions.images			,	get_images				);
+emit(self.options.actions.selectedLinks		,	get_selected_links		);
+emit(self.options.actions.selectedTextLinks	,	get_selected_text_links	);
+emit(self.options.actions.imageLinks		,	get_image_links			);

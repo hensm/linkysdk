@@ -1,6 +1,6 @@
 "use strict";
 
-const { require } = window.arguments[0];
+const { require, open_type } = window.arguments[0];
 
 const { get: _ }	= require("sdk/l10n");
 const { regex }		= require("./data/regex-url.js");
@@ -33,8 +33,8 @@ let tree;
 let sort_column = sort.HREF;
 let sort_order = sort_orders.ASC;
 
+// Stops link delay timeouts when true
 let is_cancelled = false;
-const { open_type } = window.arguments[0];
 
 
 /**	
