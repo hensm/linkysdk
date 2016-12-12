@@ -2,14 +2,15 @@
 
 const { require, open_type } = window.arguments[0];
 
-const { get: _ }	= require("sdk/l10n");
-const { regex }		= require("./data/regex-url.js");
-const { prefs }		= require("sdk/simple-prefs");
+const { get: _ }		= require("sdk/l10n");
+const { open_types }	= require("./data/utils.js");
+const { regex }			= require("./data/regex-url.js");
+const { prefs }			= require("sdk/simple-prefs");
 
-const bookmarks		= require("sdk/places/bookmarks");
-const clipboard		= require("sdk/clipboard");
-const tabs			= require("sdk/tabs");
-const timers		= require("sdk/timers");
+const bookmarks			= require("sdk/places/bookmarks");
+const clipboard			= require("sdk/clipboard");
+const tabs				= require("sdk/tabs");
+const timers			= require("sdk/timers");
 
 
 
@@ -308,7 +309,7 @@ function open_links (type, delay_enabled) {
 		tabs.open({
 			url,
 			inBackground: true,
-			inNewWindow: type === "win"
+			inNewWindow: type === open_types.WINDOW
 		});
 	}
 

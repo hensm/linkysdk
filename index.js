@@ -1,18 +1,21 @@
 "use strict";
 
-const { get: _	}	= require("sdk/l10n");
+const { get: _	}		= require("sdk/l10n");
 
-const clipboard		= require("sdk/clipboard");
-const context_menu	= require("sdk/context-menu");
-const notifications	= require("sdk/notifications");
-const request		= require("sdk/request");
-const self			= require("sdk/self");
-const tabs			= require("sdk/tabs");
-const window_utils	= require("sdk/window/utils");
-const simple_prefs	= require("sdk/simple-prefs");
+const { open_types }	= require("./data/utils.js");
 
-const SELECT_DIALOG_URL = "chrome://linkysdk/content/dialog.xul";
-const OPTIONS_DIALOG_URL = "chrome://linkysdk/content/options.xul";
+const clipboard			= require("sdk/clipboard");
+const context_menu		= require("sdk/context-menu");
+const notifications		= require("sdk/notifications");
+const request			= require("sdk/request");
+const self				= require("sdk/self");
+const tabs				= require("sdk/tabs");
+const window_utils		= require("sdk/window/utils");
+const simple_prefs		= require("sdk/simple-prefs");
+
+const SELECT_DIALOG_URL		= "chrome://linkysdk/content/dialog.xul";
+const OPTIONS_DIALOG_URL	= "chrome://linkysdk/content/options.xul";
+
 
 let menu;
 
@@ -97,58 +100,56 @@ function on_menu_pref_change () {
 	});
 
 
-	// 0 = tab
-	// 1 = win
-	// 2 = tab + win
 	const pref = simple_prefs.prefs.showopen;
-	const items = (pref === 2
-		? actions_tab.concat(actions_win)
-		: pref === 1
-			? actions_win
-			: actions_tab).filter(function (item) {
+	const items = (pref === open_types.BOTH
+			? actions_tab.concat(actions_win)
+			: pref === open_types.WINDOW
+				? actions_win
+				: actions_tab)
+		.filter(item => {
+			switch (item) {
+				case "open-selected-tab":
+				case "open-selected-win":
+					return simple_prefs.prefs["context.selectedlinks"];
 
-		switch (item) {
-			case "open-selected-tab":
-			case "open-selected-win":
-				return simple_prefs.prefs["context.selectedlinks"];
+				case "selected-text-tab":
+				case "selected-text-win":
+					return simple_prefs.prefs["context.selectedtextlinks"];
 
-			case "selected-text-tab":
-			case "selected-text-win":
-				return simple_prefs.prefs["context.selectedtextlinks"];
+				case "open-all-tab":
+				case "open-all-win":
+					return simple_prefs.prefs["context.alllinks"];
 
-			case "open-all-tab":
-			case "open-all-win":
-				return simple_prefs.prefs["context.alllinks"];
+				case "clipboard-selected":
+				case "clipboard-all":
+					return simple_prefs.prefs["context.clipboard"];
 
-			case "clipboard-selected":
-			case "clipboard-all":
-				return simple_prefs.prefs["context.clipboard"];
+				case "download-all":
+				case "download-selected":
+					return simple_prefs.prefs["context.downloadlinks"];
 
-			case "download-all":
-			case "download-selected":
-				return simple_prefs.prefs["context.downloadlinks"];
+				default:
+					return true;
+			}
+		})
+		.map(item => {
 
-			default:
-				return true;
-		}
-	}).map(function (item) {
+			// set contexts
+			switch (item) {
+				case "open-selected-tab":
+				case "open-selected-win":
+				case "selected-text-tab":
+				case "selected-text-win":
+				case "clipboard-selected":
+				case "download-selected":
+					return create_menu_item(item, ctx_selection);
 
-		// set contexts
-		switch (item) {
-			case "open-selected-tab":
-			case "open-selected-win":
-			case "selected-text-tab":
-			case "selected-text-win":
-			case "clipboard-selected":
-			case "download-selected":
-				return create_menu_item(item, ctx_selection);
+				// TODO: check for images, image links, etc...
 
-			// TODO: check for images, image links, etc...
-
-			default:
-				return create_menu_item(item);
-		}
-	});
+				default:
+					return create_menu_item(item);
+			}
+		});
 
 
 	menu = context_menu.Menu({
@@ -170,17 +171,30 @@ function on_menu_pref_change () {
 			contentScriptFile: ["./regex-url.js", "./content-script.js"],
 			contentScriptOptions: {
 				name: msg,
-				actions: actions
+				actions
 			}
 		});
 		worker.on("message", msg => {
-			let open_type;
+			const in_tab = msg.subject.endsWith("-tab");
+			const in_win = msg.subject.endsWith("-win");
 
-			if (msg.subject.endsWith("-tab")) {
-				open_type = "tab";
-			} else
-			if (msg.subject.endsWith("-win")) {
-				open_type = "win";
+			if (in_tab || in_win) {
+				window_utils.openDialog({
+					url: SELECT_DIALOG_URL,
+					features: `
+							chrome,
+							centerscreen,
+							resizable=yes,
+							width=${simple_prefs.prefs.dialog_width},
+							height=${simple_prefs.prefs.dialog_height}`,
+					args: {
+						require,
+						data: msg.payload,
+						open_type: in_tab
+							? open_types.TAB
+							: open_types.WINDOW
+					}
+				});
 			} else {
 				switch (msg.subject) {
 					case "clipboard-all":
@@ -195,23 +209,6 @@ function on_menu_pref_change () {
 						});
 						break;
 				}
-			}
-
-			if (open_type) {
-				window_utils.openDialog({
-					url: SELECT_DIALOG_URL,
-					features:`
-							chrome,
-							centerscreen,
-							resizable=yes,
-							width=${simple_prefs.prefs.dialog_width},
-							height=${simple_prefs.prefs.dialog_height}`,
-					args: {
-						data: msg.payload,
-						require,
-						open_type
-					}
-				});
 			}
 		});
 	});
